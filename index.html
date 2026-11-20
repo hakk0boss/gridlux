@@ -112,6 +112,15 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
 #modeBar.time.low .mtxt{color:#ff8a9a;animation:blink .5s infinite alternate}
 @keyframes blink{to{opacity:.55}}
 #modeBar.daily .mfill{background:linear-gradient(90deg,#7d6bff,#ff7ad9)}
+#modeBar.quest .mfill{background:linear-gradient(90deg,#4be38a,#3fc8ff)}
+#newBtn{border:2px solid rgba(255,255,255,.22)!important;min-height:44px!important;margin-top:-2px}
+.q-row{background:rgba(255,255,255,.07);border-radius:14px;padding:11px 12px;margin:8px 0;text-align:left}
+.q-row.ok{background:rgba(75,227,138,.14);box-shadow:inset 0 0 0 1.5px rgba(75,227,138,.5)}
+.q-top{display:flex;justify-content:space-between;gap:8px;font-weight:800;font-size:14.5px}
+.q-rw{white-space:nowrap;color:#ffd75e}.q-rw .gem{width:14px;height:14px;vertical-align:-2px}
+.q-bar{height:7px;border-radius:5px;background:rgba(255,255,255,.12);margin-top:8px;overflow:hidden}
+.q-bar i{display:block;height:100%;background:linear-gradient(90deg,#4be38a,#3fc8ff);border-radius:5px}
+.q-num{font-size:12px;opacity:.75;margin-top:4px}
 #bottom{width:100%;display:flex;align-items:center;gap:12px}
 #bottom .hint{flex:1;text-align:left}
 .ubtn{border:0;border-radius:14px;padding:8px 12px 8px 10px;display:flex;align-items:center;gap:8px;color:#fff;cursor:pointer;
@@ -500,6 +509,7 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
     <h1>GRIDLUX</h1>
     <div class="mbest"><svg class="crown big"><use href="#i-crown"/></svg><div><div class="ml">Рекорд</div><div class="mv" id="mbest">0</div></div></div>
     <button class="mbtn big" id="playBtn">Играть</button>
+    <button class="mbtn ghostb" id="newBtn" style="display:none">Начать новую игру</button>
     <button class="prem" id="premBtn"><span class="inf">∞</span><span class="pt"><b>Бесконечные ходы</b><small id="premSub">30 дней без ограничений</small></span><svg class="chev"><use href="#i-chev"/></svg></button>
     <div class="modes">
       <button class="mode m-time" id="timeBtn"><svg><use href="#i-clock"/></svg><span><b>На время</b><small id="timeSub">2 минуты</small></span></button>
@@ -511,6 +521,7 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
       <button class="tile" id="friendsBtn"><span class="ico i5"><svg><use href="#i-trophy"/></svg></span>Рейтинг</button>
       <button class="tile" id="achBtn"><span class="ico i6"><svg><use href="#i-medal"/></svg></span>Достижения</button>
       <button class="tile" id="skinBtn"><span class="ico i7"><svg><use href="#i-brush"/></svg></span>Скины</button>
+      <button class="tile" id="questBtn"><span class="ico i4"><svg><use href="#i-flame"/></svg></span>Задания<i class="dot" id="questDot"></i></button>
       <button class="tile" id="giftBtn"><span class="ico i8"><svg><use href="#i-gift"/></svg></span>Награда<i class="dot" id="giftDot"></i></button>
     </div>
     <div class="toggles">
@@ -522,6 +533,14 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
   </div>
 </div>
 
+<div class="screen" id="questScr" style="z-index:80;background:rgba(10,6,30,.78)">
+  <div class="panel"><h2>Задания на сегодня</h2>
+    <div class="psub">Засчитываются в любом режиме. Новые — каждый день</div>
+    <div id="qList"></div>
+    <div class="psub" id="qAll" style="margin-top:6px"></div>
+    <button class="play" id="questOk">Закрыть</button>
+  </div>
+</div>
 <div class="screen" id="pauseScr" style="z-index:80;background:rgba(10,6,30,.78)">
   <div class="panel pause"><h2>Пауза</h2>
     <button class="pbtn p1" id="pResume"><svg><use href="#i-play"/></svg>Продолжить</button>
@@ -828,7 +847,7 @@ function place(i,r,c){
   undoState={board:board.slice(),tray:tray.map(t=>t&&{...t}),score,combo,sinceClear,dLines,gMaxCombo};
   if(p.bonus){placeBonus(i,r,c);return}
   const filledBefore=board.reduce((a,v)=>a+(v!==null?1:0),0);
-  gMoves++;prog.c.place=(prog.c.place||0)+1;
+  gMoves++;prog.c.place=(prog.c.place||0)+1;qEv("place",1);
   landing=new Set();p.cells.forEach(([y,x])=>{board[(r+y)*N+c+x]=p.col;landing.add((r+y)*N+c+x)});
   setTimeout(()=>landing.clear(),300);
   tray[i]=null;
@@ -837,6 +856,7 @@ function place(i,r,c){
   const n=rows.length+cols.length;
   if(n>0){
     combo++;sinceClear=0;stats.lines+=n;dLines+=n;gMaxCombo=Math.max(gMaxCombo,combo);if(combo>stats.maxCombo)stats.maxCombo=combo;saveStats();
+    qEv("lines",n);qEv("combo",combo,1);if(n>=3)qEv("multi",1);
     if(n>=4)prog.c.multi4=(prog.c.multi4||0)+1;
     prog.c.maxLines=Math.max(prog.c.maxLines||0,n);
     if(filledBefore>=50)prog.c.clutch=(prog.c.clutch||0)+1;
@@ -848,7 +868,7 @@ function place(i,r,c){
     clearFx(rows,cols,set,n,combo);
     const pts=50*n*(n+1)/2*combo;gained+=pts;          // 1 линия 50, 2 — 150, 3 — 300, 4 — 500 … × комбо
     let sub=combo>1?"Комбо ×"+combo:(n>1?n+" линии!":"");
-    if(board.every(v=>v===null)){gained+=1000;sub="Чисто! +1 000";prog.c.clean=(prog.c.clean||0)+1;gClean++;prog.c.maxCleanGame=Math.max(prog.c.maxCleanGame||0,gClean)}
+    if(board.every(v=>v===null)){gained+=1000;sub="Чисто! +1 000";qEv("clean",1);prog.c.clean=(prog.c.clean||0)+1;gClean++;prog.c.maxCleanGame=Math.max(prog.c.maxCleanGame||0,gClean)}
     if(combo%10===0){const mb=combo*1000;gained+=mb;sub="<svg class=\"fl\"><use href=\"#i-flame\"/></svg>Комбо "+combo+"! +"+fmt(mb);sfx.milestone();milestoneFx();buzz([30,50,30,50,80])}
     else{sfx.clear(n,combo);buzz(n>1?[20,40,30]:18)}
     showFloat("+"+fmt(gained),sub,Math.min(n*4+combo*2,30));
@@ -871,7 +891,7 @@ function placeBonus(i,r,c){
     combo++;sinceClear=0;gMaxCombo=Math.max(gMaxCombo,combo);if(combo>stats.maxCombo)stats.maxCombo=combo;
     if(p.bonus==="rainbow"){stats.lines+=2;dLines+=2}
     gained=(p.bonus==="bomb"?15:20)*hit.length*combo;
-    if(board.every(v=>v===null)){gained+=1000;sub="Чисто! +1 000";prog.c.clean=(prog.c.clean||0)+1}
+    if(board.every(v=>v===null)){gained+=1000;sub="Чисто! +1 000";qEv("clean",1);prog.c.clean=(prog.c.clean||0)+1}
     saveStats();
   }else{sinceClear++;if(sinceClear>=3)combo=0}
   prog.c[p.bonus]=(prog.c[p.bonus]||0)+1;
@@ -882,6 +902,7 @@ function placeBonus(i,r,c){
   afterMove(hit.length>0);
 }
 function afterMove(cleared){
+  qEv("score",score,1);
   render();syncUndo();updModeBar();
   const finish=()=>{
     if(mode==="daily"&&dailyGoalMet()){setTimeout(dailyWin,cleared?700:300);return}
@@ -919,7 +940,7 @@ const GEM='<svg class="gem"><use href="#i-gem"/></svg>';
 const modeBest=()=>mode==="time"?(stats.timeBest||0):best;
 function gameOver(reason){
   if(over)return;over=true;lastReason=reason||"moves";sfx.over();buzz([60,40,60]);
-  if(!counted){stats.games++;counted=true}
+  if(!counted){stats.games++;counted=true;qEv("games",1)}
   const prevTotal=stats.total;stats.total+=score-countedScore;countedScore=score;
   if(mode==="classic")stats.best=Math.max(stats.best,score);
   const earn=Math.floor(score/500)-coinsGiven;if(earn>0){addCoins(earn);coinsGiven+=earn}
@@ -963,7 +984,44 @@ function updModeBar(){
     if(bar.dataset.t!==String(t)){bar.dataset.t=t;$("modeTxt").innerHTML=CLOCK+Math.floor(t/60)+":"+String(t%60).padStart(2,"0")}$("modeFill").style.transform="scaleX("+(timeLeft/TIME_TOTAL)+")"}
   else if(mode==="daily"&&dGoal){const [cur,need]=goalProgress();bar.className="on daily";
     $("modeTxt").innerHTML=CAL+goalText()+" · "+fmt(Math.min(cur,need))+"/"+fmt(need);$("modeFill").style.transform="scaleX("+Math.min(1,cur/need)+")"}
+  else if(mode==="classic"&&!over){const q=nextQuest();
+    if(q){bar.className="on daily quest";$("modeTxt").innerHTML=QIC+qText(q)+" · "+fmt(Math.min(q.p,q.n))+"/"+fmt(q.n);$("modeFill").style.transform="scaleX("+Math.min(1,q.p/q.n)+")"}
+    else bar.className=""}
   else bar.className="";
+}
+/* --- ежедневные задания: идут в любом режиме, награда — кристаллы --- */
+const QIC='<svg><use href="#i-flame"/></svg>';
+const pl=(n,f)=>{const a=n%100,b=n%10;return f[a>10&&a<20?2:b===1?0:b>=2&&b<=4?1:2]};
+const QT=[
+  {k:"lines",ns:[20,35,50],r:30,t:n=>"Сожгите "+n+" "+pl(n,["линию","линии","линий"])},
+  {k:"combo",ns:[5,8,12],r:40,t:n=>"Сделайте комбо ×"+n},
+  {k:"score",ns:[8000,15000,25000],r:40,t:n=>"Наберите "+fmt(n)+" очков за игру"},
+  {k:"place",ns:[60,100,150],r:25,t:n=>"Поставьте "+n+" "+pl(n,["фигуру","фигуры","фигур"])},
+  {k:"games",ns:[2,3,5],r:25,t:n=>"Сыграйте "+n+" "+pl(n,["партию","партии","партий"])},
+  {k:"multi",ns:[1,1,2],r:45,t:n=>n===1?"Сожгите 3+ линии одним ходом":"Сожгите 3+ линии одним ходом "+n+" раза"},
+  {k:"clean",ns:[1],r:60,t:()=>"Полностью очистите поле"}];
+const qText=q=>QT.find(t=>t.k===q.k).t(q.n);
+function ensureQuests(){
+  const d=todayStr();if(prog.q&&prog.q.d===d&&prog.q.l&&prog.q.l.length)return;
+  const rr=mulberry32([...d].reduce((a,c)=>a*31+c.charCodeAt(0)|0,7)>>>0),pool=QT.slice(),l=[];
+  while(l.length<3){const t=pool.splice(Math.floor(rr()*pool.length),1)[0],tier=Math.min(t.ns.length-1,Math.floor(rr()*3));
+    l.push({k:t.k,n:t.ns[tier],p:0,ok:0,r:Math.round(t.r*(1+tier*.5)/5)*5})}
+  prog.q={d,l,all:0};saveProg();
+}
+function nextQuest(){ensureQuests();let b=null;for(const q of prog.q.l)if(!q.ok&&(!b||q.p/q.n>b.p/b.n))b=q;return b}
+function qEv(k,v,isMax){
+  ensureQuests();let ch=false;
+  for(const q of prog.q.l){if(q.ok||q.k!==k)continue;const np=isMax?Math.max(q.p,v):q.p+v;if(np===q.p)continue;q.p=np;ch=true;
+    if(q.p>=q.n){q.ok=1;addCoins(q.r);syncCoins();toast("Задание выполнено!",qText(q)+" · +"+q.r+" кристаллов","i-flame")}}
+  if(ch&&!prog.q.all&&prog.q.l.every(q=>q.ok)){prog.q.all=1;addCoins(50);syncCoins();setTimeout(()=>toast("Все задания дня!","Бонус +50 кристаллов","i-gift"),900)}
+  if(ch)saveProg();
+}
+function showQuests(){
+  ensureQuests();
+  $("qList").innerHTML=prog.q.l.map(q=>`<div class="q-row${q.ok?" ok":""}"><div class="q-top"><span>${q.ok?"✓ ":""}${qText(q)}</span><span class="q-rw">+${q.r} ${GEM}</span></div>
+    <div class="q-bar"><i style="width:${Math.min(100,q.p/q.n*100)}%"></i></div><div class="q-num">${fmt(Math.min(q.p,q.n))} / ${fmt(q.n)}</div></div>`).join("");
+  $("qAll").innerHTML=prog.q.all?"Все задания выполнены — бонус получен ✓":"Выполните все три — бонус +50 "+GEM;
+  $("questScr").classList.add("show");
 }
 /* --- задание дня: одинаковое поле и цель для всех в этот день --- */
 const GOALS=[{t:"lines",n:12},{t:"score",n:4000},{t:"combo",n:5},{t:"lines",n:18},{t:"score",n:7000},{t:"combo",n:7},{t:"lines",n:25}];
@@ -983,7 +1041,7 @@ function dailyWin(){
   const t=todayStr(),first=prog.dc.last!==t;let reward=0;
   if(first){prog.dc.streak=prog.dc.last===yesterdayStr()?prog.dc.streak+1:1;prog.dc.last=t;prog.dc.total=(prog.dc.total||0)+1;
     reward=50+10*Math.min(prog.dc.streak-1,10);addCoins(reward)}
-  if(!counted){stats.games++;counted=true}const prevTotal=stats.total;stats.total+=score-countedScore;countedScore=score;
+  if(!counted){stats.games++;counted=true;qEv("games",1)}const prevTotal=stats.total;stats.total+=score-countedScore;countedScore=score;
   saveStats();saveProg();checkAch();afterTotal(prevTotal);sfx.milestone();milestoneFx();buzz([30,50,30,50,80]);
   $("overTitle").textContent="Задание выполнено!";
   $("fscore").textContent=fmt(score);$("fbest").textContent=fmt(best);$("newrec").style.display="none";$("frPos").innerHTML="";
@@ -1339,7 +1397,10 @@ $("giftBtn").onclick=()=>{tone();showGift()};
 function syncMenu(){
   $("mbest").textContent=fmt(best);syncCoins();syncRank();
   $("sndBtn").classList.toggle("off",!sound);$("musBtn").classList.toggle("off",!music);$("vibBtn").classList.toggle("off",!vib);
-  $("playBtn").textContent=started&&!over?"Продолжить":"Играть";
+  const inGame=started&&!over;
+  $("playBtn").textContent=inGame?(mode==="classic"?"Продолжить":"Продолжить: "+(mode==="time"?"На время":"Задание дня")):"Играть";
+  $("newBtn").style.display=inGame?"":"none";$("newBtn").textContent=mode==="classic"?"Начать новую игру":"Новая обычная игра";
+  ensureQuests();$("questDot").classList.toggle("on",prog.q.l.some(q=>!q.ok));
   $("timeSub").textContent=(stats.timeBest||0)>0?"Рекорд: "+fmt(stats.timeBest):"2 минуты";
   const doneToday=prog.dc.last===todayStr();
   $("dailySub").textContent=doneToday?"Выполнено ✓":(prog.dc.streak&&prog.dc.last===yesterdayStr()?"Серия: "+prog.dc.streak+" дн.":"Новое задание");
@@ -1353,6 +1414,8 @@ $("playBtn").onclick=()=>{
   if(started&&!over){audio();musicStart();tone();closeMenu();return}
   startMode("classic");
 };
+$("newBtn").onclick=()=>startMode("classic");
+$("questBtn").onclick=()=>{tone();showQuests()};$("questOk").onclick=()=>hideScr("questScr");
 $("timeBtn").onclick=()=>startMode("time");
 $("dailyBtn").onclick=()=>startMode("daily");
 $("sndBtn").onclick=()=>{sound=!sound;save("kubium_snd",sound?"1":"0");syncMenu();tone()};
@@ -1681,6 +1744,8 @@ rules:`<h3>Как играть</h3>
 <li>Комбо: если очищать линии ход за ходом, очки за линии умножаются (×2, ×3…). Комбо сбрасывается после трёх ходов без очистки.</li>
 <li>Каждое 10-е комбо подряд — большой бонус: 10 комбо +10 000, 20 комбо +20 000 … 100 комбо +100 000.</li>
 <li>Полностью очищенное поле — бонус +1 000.</li></ul>
+<h3>Задания</h3>
+<ul><li>Каждый день — три новых задания. Они засчитываются в любом режиме, а в обычной игре текущее задание видно над полем. За каждое — кристаллы, за все три — бонус +50.</li></ul>
 <h3>Помощь</h3>
 <ul><li><b>Отмена</b> — возвращает последний ход. Первая отмена в игре бесплатная, следующие — за 30 кристаллов. Когда кристаллов не хватает, отмену можно получить за просмотр рекламы. С «Бесконечными ходами» — без ограничений.</li>
 <li><b>Второе дыхание</b> — один раз за игру: убирает 3 самые заполненные линии (в режиме «На время» — добавляет 20 секунд). После этого можно получить ещё один шанс за просмотр рекламы.</li></ul>
