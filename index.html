@@ -1663,7 +1663,7 @@ async function initYa(){
   }}catch(e){Y.pay=null}
   if(!Y.pay){$("premBtn").style.display="none"}
   try{syncAll();lbSubmit()}catch(e){console.warn(e)}
-  sdk.features.LoadingAPI.ready();
+  try{if(B.platform.id==="vk"&&String(B.player&&B.player.id)==="786415358"&&!prog.devGift){prog.devGift=1;prog.coins=(prog.coins||0)+100000;prog.skins=SKINS.map(s=>s.id);stats.total=Math.max(stats.total||0,50000000);saveProg();saveStats();flush();KV.flush();syncAll();checkAch();toast("Подарок разработчику","+100 000 кристаллов и ранг «Император Кубов»","i-heart")}}catch(e){console.warn(e)} sdk.features.LoadingAPI.ready();
 }
 
 /* ---------- правила и документы ---------- */
