@@ -113,7 +113,9 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
 @keyframes blink{to{opacity:.55}}
 #modeBar.daily .mfill{background:linear-gradient(90deg,#7d6bff,#ff7ad9)}
 #modeBar.quest .mfill{background:linear-gradient(90deg,#4be38a,#3fc8ff)}
-#newBtn{border:2px solid rgba(255,255,255,.22)!important;min-height:44px!important;margin-top:-2px}
+#newBtn{min-height:50px!important;margin-top:-2px;opacity:1!important;font-size:16.5px!important;font-weight:800!important;color:#fff!important;background:linear-gradient(90deg,#7d6bff,#ff7ad9)!important;box-shadow:0 5px 0 #4b3aa8,0 12px 22px rgba(0,0,0,.3)!important}
+#qShow{margin:4px 0 10px;width:100%;border:0;border-radius:12px;padding:10px;font-weight:800;font-size:14px;color:#fff;background:rgba(255,255,255,.1);cursor:pointer}
+#qShow.on{background:rgba(75,227,138,.22)}
 .q-row{background:rgba(255,255,255,.07);border-radius:14px;padding:11px 12px;margin:8px 0;text-align:left}
 .q-row.ok{background:rgba(75,227,138,.14);box-shadow:inset 0 0 0 1.5px rgba(75,227,138,.5)}
 .q-top{display:flex;justify-content:space-between;gap:8px;font-weight:800;font-size:14.5px}
@@ -538,6 +540,7 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
     <div class="psub">Засчитываются в любом режиме. Новые — каждый день</div>
     <div id="qList"></div>
     <div class="psub" id="qAll" style="margin-top:6px"></div>
+    <button id="qShow">Показывать задание над полем: выкл</button>
     <button class="play" id="questOk">Закрыть</button>
   </div>
 </div>
@@ -984,7 +987,7 @@ function updModeBar(){
     if(bar.dataset.t!==String(t)){bar.dataset.t=t;$("modeTxt").innerHTML=CLOCK+Math.floor(t/60)+":"+String(t%60).padStart(2,"0")}$("modeFill").style.transform="scaleX("+(timeLeft/TIME_TOTAL)+")"}
   else if(mode==="daily"&&dGoal){const [cur,need]=goalProgress();bar.className="on daily";
     $("modeTxt").innerHTML=CAL+goalText()+" · "+fmt(Math.min(cur,need))+"/"+fmt(need);$("modeFill").style.transform="scaleX("+Math.min(1,cur/need)+")"}
-  else if(mode==="classic"&&!over){const q=nextQuest();
+  else if(mode==="classic"&&!over&&prog.qShow){const q=nextQuest();
     if(q){bar.className="on daily quest";$("modeTxt").innerHTML=QIC+qText(q)+" · "+fmt(Math.min(q.p,q.n))+"/"+fmt(q.n);$("modeFill").style.transform="scaleX("+Math.min(1,q.p/q.n)+")"}
     else bar.className=""}
   else bar.className="";
@@ -1021,6 +1024,7 @@ function showQuests(){
   $("qList").innerHTML=prog.q.l.map(q=>`<div class="q-row${q.ok?" ok":""}"><div class="q-top"><span>${q.ok?"✓ ":""}${qText(q)}</span><span class="q-rw">+${q.r} ${GEM}</span></div>
     <div class="q-bar"><i style="width:${Math.min(100,q.p/q.n*100)}%"></i></div><div class="q-num">${fmt(Math.min(q.p,q.n))} / ${fmt(q.n)}</div></div>`).join("");
   $("qAll").innerHTML=prog.q.all?"Все задания выполнены — бонус получен ✓":"Выполните все три — бонус +50 "+GEM;
+  $("qShow").textContent="Показывать задание над полем: "+(prog.qShow?"вкл":"выкл");$("qShow").classList.toggle("on",!!prog.qShow);
   $("questScr").classList.add("show");
 }
 /* --- задание дня: одинаковое поле и цель для всех в этот день --- */
@@ -1415,7 +1419,8 @@ $("playBtn").onclick=()=>{
   startMode("classic");
 };
 $("newBtn").onclick=()=>startMode("classic");
-$("questBtn").onclick=()=>{tone();showQuests()};$("questOk").onclick=()=>hideScr("questScr");
+$("questBtn").onclick=()=>{tone();showQuests()};
+$("qShow").onclick=()=>{prog.qShow=prog.qShow?0:1;saveProg();tone();showQuests();updModeBar()};$("questOk").onclick=()=>hideScr("questScr");
 $("timeBtn").onclick=()=>startMode("time");
 $("dailyBtn").onclick=()=>startMode("daily");
 $("sndBtn").onclick=()=>{sound=!sound;save("kubium_snd",sound?"1":"0");syncMenu();tone()};
@@ -1745,7 +1750,7 @@ rules:`<h3>Как играть</h3>
 <li>Каждое 10-е комбо подряд — большой бонус: 10 комбо +10 000, 20 комбо +20 000 … 100 комбо +100 000.</li>
 <li>Полностью очищенное поле — бонус +1 000.</li></ul>
 <h3>Задания</h3>
-<ul><li>Каждый день — три новых задания. Они засчитываются в любом режиме, а в обычной игре текущее задание видно над полем. За каждое — кристаллы, за все три — бонус +50.</li></ul>
+<ul><li>Каждый день — три новых задания. Они засчитываются в любом режиме, а в окне «Задания» можно включить показ текущего задания над полем. За каждое — кристаллы, за все три — бонус +50.</li></ul>
 <h3>Помощь</h3>
 <ul><li><b>Отмена</b> — возвращает последний ход. Первая отмена в игре бесплатная, следующие — за 30 кристаллов. Когда кристаллов не хватает, отмену можно получить за просмотр рекламы. С «Бесконечными ходами» — без ограничений.</li>
 <li><b>Второе дыхание</b> — один раз за игру: убирает 3 самые заполненные линии (в режиме «На время» — добавляет 20 секунд). После этого можно получить ещё один шанс за просмотр рекламы.</li></ul>
