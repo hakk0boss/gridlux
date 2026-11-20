@@ -229,16 +229,16 @@ header{width:100%;display:flex;align-items:center;justify-content:space-between}
 .day.big{grid-column:span 2}
 .play:disabled{filter:grayscale(1);opacity:.5}
 /* ---------- скины ---------- */
-.skin-glass .blk,.skin-glass .mini .m.on,.skin-glass #float .f.on,.skin-glass .pv{
+.skin-glass .blk,.skin-glass .mini .m.on,.skin-glass #float .f.on,.sk.skin-glass .pv{
   background:linear-gradient(150deg,color-mix(in srgb,var(--col) 30%,rgba(255,255,255,.35)),color-mix(in srgb,var(--col) 55%,transparent))!important;
   box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--col) 70%,#fff),inset 0 0 12px rgba(255,255,255,.35),0 3px 8px rgba(0,0,0,.3)!important}
-.skin-neon .blk,.skin-neon .mini .m.on,.skin-neon #float .f.on,.skin-neon .pv{
+.skin-neon .blk,.skin-neon .mini .m.on,.skin-neon #float .f.on,.sk.skin-neon .pv{
   background:color-mix(in srgb,var(--col) 16%,#0a0820)!important;box-shadow:inset 0 0 0 2px var(--col),0 0 10px var(--col),inset 0 0 9px var(--col)!important}
 .skin-neon .blk::after,.skin-neon .mini .m.on::after,.skin-neon #float .f.on::after{display:none}
-.skin-candy .blk,.skin-candy .mini .m.on,.skin-candy #float .f.on,.skin-candy .pv{
+.skin-candy .blk,.skin-candy .mini .m.on,.skin-candy #float .f.on,.sk.skin-candy .pv{
   background:repeating-linear-gradient(45deg,var(--col) 0 5px,color-mix(in srgb,var(--col) 55%,#fff) 5px 10px)!important;
   box-shadow:inset 0 -4px 0 color-mix(in srgb,var(--col) 55%,#000),inset 0 3px 0 rgba(255,255,255,.5),0 3px 5px rgba(0,0,0,.35)!important;border-radius:40%!important}
-.skin-wood .blk,.skin-wood .mini .m.on,.skin-wood #float .f.on,.skin-wood .pv{
+.skin-wood .blk,.skin-wood .mini .m.on,.skin-wood #float .f.on,.sk.skin-wood .pv{
   background:repeating-linear-gradient(100deg,color-mix(in srgb,var(--col) 45%,#9a6634) 0 4px,color-mix(in srgb,var(--col) 35%,#6b4220) 4px 7px)!important;
   box-shadow:inset 0 -4px 0 rgba(40,20,5,.55),inset 0 2px 0 rgba(255,230,190,.4),0 3px 5px rgba(0,0,0,.35)!important}
 .pv{background:linear-gradient(150deg,color-mix(in srgb,var(--col) 55%,#fff) 0%,var(--col) 38%,color-mix(in srgb,var(--col) 72%,#000) 100%);
@@ -631,7 +631,7 @@ window.__B=null;window.__LB_ON=false;
   try{if(window.bridge){await bridge.initialize();window.__B=bridge}}catch(e){console.warn("bridge init",e)}
   const B=window.__B;
   if(B){KV.use(B);
-    try{const v=await B.storage.get(KEYS);KEYS.forEach((k,i)=>{if(v&&v[i]!==null&&v[i]!==undefined)KV.m[k]=String(v[i])})}catch(e){}
+    try{const v=await B.storage.get(KEYS);KEYS.forEach((k,i)=>{if(v&&v[i]!==null&&v[i]!==undefined)KV.m[k]=typeof v[i]==="object"?JSON.stringify(v[i]):String(v[i])})}catch(e){}
     try{window.__LB_ON=B.leaderboards&&B.leaderboards.type==="in_game"}catch(e){}
     document.addEventListener("visibilitychange",()=>{if(document.hidden)KV.flush()});
     window.addEventListener("pagehide",()=>KV.flush());
