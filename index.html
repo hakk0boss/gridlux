@@ -1429,8 +1429,15 @@ function startDrag(i,e){
   window.addEventListener("pointercancel",cancel);
   requestAnimationFrame(dragLoop);
 }
+const TOUCH_SENS=1.7;
 function aim(cx,cy){
-  const d=drag;d.tx=cx-d.w/2;d.ty=cy-d.h/2-(d.touch?d.h/2+d.lift:0);
+  const d=drag;
+  if(d.touch){ // палец проходит меньше: фигура движется в TOUCH_SENS раз быстрее пальца
+    if(!d.f0)d.f0=[cx,cy];
+    cx=Math.max(0,Math.min(innerWidth,d.f0[0]+(cx-d.f0[0])*TOUCH_SENS));
+    cy=Math.max(0,Math.min(innerHeight+d.h,d.f0[1]+(cy-d.f0[1])*TOUCH_SENS));
+  }
+  d.tx=cx-d.w/2;d.ty=cy-d.h/2-(d.touch?d.h/2+d.lift:0);
   d.tilt=Math.max(-8,Math.min(8,(cx-d.px)*.6));d.px=cx;
   const c=Math.round((d.tx-d.m.x0)/d.m.step),r=Math.round((d.ty-d.m.y0)/d.m.step);
   const ok=fits(d.p,r,c),pk=ok?r*N+c:-1;
@@ -2652,8 +2659,15 @@ function startDrag(i,e){
   window.addEventListener("pointercancel",cancel);
   requestAnimationFrame(dragLoop);
 }
+const TOUCH_SENS=1.7;
 function aim(cx,cy){
-  const d=drag;d.tx=cx-d.w/2;d.ty=cy-d.h/2-(d.touch?d.h/2+d.lift:0);
+  const d=drag;
+  if(d.touch){ // палец проходит меньше: фигура движется в TOUCH_SENS раз быстрее пальца
+    if(!d.f0)d.f0=[cx,cy];
+    cx=Math.max(0,Math.min(innerWidth,d.f0[0]+(cx-d.f0[0])*TOUCH_SENS));
+    cy=Math.max(0,Math.min(innerHeight+d.h,d.f0[1]+(cy-d.f0[1])*TOUCH_SENS));
+  }
+  d.tx=cx-d.w/2;d.ty=cy-d.h/2-(d.touch?d.h/2+d.lift:0);
   d.tilt=Math.max(-8,Math.min(8,(cx-d.px)*.6));d.px=cx;
   const c=Math.round((d.tx-d.m.x0)/d.m.step),r=Math.round((d.ty-d.m.y0)/d.m.step);
   const ok=fits(d.p,r,c),pk=ok?r*N+c:-1;
